@@ -1,0 +1,57 @@
+version: '3'
+services:
+    postgres:
+        image: 'postgres:latest'
+        environment:
+            - POSTGRES_PASSWORD=postgres_password
+    redis:
+        image: 'redis:latest'
+    nginx:
+        depends_on:
+            - api
+            - client
+        restart: always
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./nginx
+        ports:
+            - '3050:80'
+    api:
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./server
+        volumes:
+            # Inside container, don't override node_modules folder
+            - /app/node_modules
+            # In server directory, look at everything and copy it to app folder in container
+            # Any changes in server folder of project will be reflected in app folder in container
+            - ./server:/app
+        environment:
+            # Same as name of the Redis service i.e. redis.
+            - REDIS_HOST=redis
+            # Recommended by Redis to use 6379 port.
+            - REDIS_PORT=6379
+            # Recommended by Postgres documentation.
+            - PGUSER=postgres
+            - PGHOST=postgres
+            - PGDATABASE=postgres
+            - PGPASSWORD=postgres_password
+            - PGPORT=5432
+    client:
+        stdin_open: true
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./client
+        volumes:
+            - /app/node_modules
+            - ./client:/app
+    worker:
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./worker
+        volumes:
+            - /app/node_modules
+            - ./worker:/app
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
