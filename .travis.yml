@@ -2,9 +2,11 @@ sudo: required
 services:
   - docker
 
+# Create test image for client as we only have test cases for that.
 before_install:
   - docker build -t kshitijsharma23/react-test -f ./client/Dockerfile.dev ./client
 
+# Run test image to execute tests
 script:
   - docker run -e CI=true kshitijsharma23/react-test npm test
 
@@ -20,3 +22,15 @@ after_success:
   - docker push kshitijsharma23/multi-nginx
   - docker push kshitijsharma23/multi-server
   - docker push kshitijsharma23/multi-worker
+
+deploy:
+  provider: elasticbeanstalk
+  region: "us-east-2"
+  app: "multi-docker"
+  env: "Multidocker-env"
+  bucker_name: "elasticbeanstalk-us-east-2-828699529795"
+  bucket_path: "docker-multi"
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
+  on:
+    branch: master
